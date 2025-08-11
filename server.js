@@ -10,7 +10,7 @@ const SHEET_NAME = "spinmerdeka";
 // Load kredensial dari file .env atau JSON service account
 import fs from "fs";
 const auth = new google.auth.GoogleAuth({
-  keyFile: "service_account.json", // file JSON dari Google Cloud
+  keyfile: "service_account.json", // file JSON dari Google Cloud
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 const sheets = google.sheets({ version: "v4", auth });
