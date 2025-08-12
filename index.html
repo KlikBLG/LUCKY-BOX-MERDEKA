@@ -549,6 +549,67 @@ let indexDipilih = -1;
 let hadiahLain = [];
 let sudahSpin = false; // ✅ Tambahkan ini
 
+// 🔧 GOOGLE APPS SCRIPT API CONFIGURATION
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec';
+
+// Helper function untuk JSONP (bypass CORS)
+function callGoogleScript(action, data = {}) {
+  return new Promise((resolve, reject) => {
+    // Jika masih development, pakai google.script.run
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      switch (action) {
+        case 'cekToken':
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).cekDanPakaiToken(data.nama, data.kode);
+          break;
+        case 'simpanHasil':
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).simpanHasil(data);
+          break;
+        case 'getSisaHadiah':
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getSisaHadiah();
+          break;
+        case 'getHistori':
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).ambilHistoriGabungan(data.nama);
+          break;
+        case 'getTipeKupon':
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getTipeKupon(data.nama);
+          break;
+        default:
+          reject(new Error('Action tidak dikenal'));
+      }
+      return;
+    }
+    
+    // Untuk production (GitHub Pages), pakai JSONP
+    const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
+    
+    // Buat URL dengan parameters
+    const params = new URLSearchParams({
+      action: action,
+      callback: callbackName,
+      ...data
+    });
+    
+    const script = document.createElement('script');
+    script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+    
+    // Set global callback
+    window[callbackName] = function(result) {
+      resolve(result);
+      document.head.removeChild(script);
+      delete window[callbackName];
+    };
+    
+    // Handle error
+    script.onerror = function() {
+      reject(new Error('Script load failed'));
+      document.head.removeChild(script);
+      delete window[callbackName];
+    };
+    
+    document.head.appendChild(script);
+  });
+}
+
 
 function spinStart() {
     sudahSpin = false; // 🔥 RESET FLAG SPIN di awal spin ulang
@@ -579,25 +640,35 @@ if (!namaUser || !kodeToken) {
     alert("Isi nama dan kode token dulu!");
     return;
   }
-google.script.run.withSuccessHandler(function(res) {
+
+// 🔧 Pakai callGoogleScript
+callGoogleScript('cekToken', {
+  nama: namaUser,
+  kode: kodeToken
+})
+.then(function(res) {
   btnText.innerText = "MULAI VERIFIKASI";
-btnText.classList.remove("loading-dots");
-    if (res === "OK") {
-document.getElementById("formPage").style.display = "none";
-document.getElementById("boxPage").style.display = "block"; // ganti jadi block
-document.getElementById("boxArea").style.display = "grid";  // tampilkan kembali area box
-document.getElementById("historyBox").style.display = "none"; // sembunyikan histori kalau sebelumnya muncul
-     document.querySelectorAll(".box").forEach(box => {
-        box.classList.remove("terbuka", "blink", "clicked"); // ⬅️ pastikan ada "clicked" juga di sini
-  box.innerHTML = "🎁";
-  box.style.pointerEvents = "auto";
+  btnText.classList.remove("loading-dots");
+  if (res === "OK") {
+    document.getElementById("formPage").style.display = "none";
+    document.getElementById("boxPage").style.display = "block"; // ganti jadi block
+    document.getElementById("boxArea").style.display = "grid";  // tampilkan kembali area box
+    document.getElementById("historyBox").style.display = "none"; // sembunyikan histori kalau sebelumnya muncul
+    document.querySelectorAll(".box").forEach(box => {
+      box.classList.remove("terbuka", "blink", "clicked"); // ⬅️ pastikan ada "clicked" juga di sini
+      box.innerHTML = "🎁";
+      box.style.pointerEvents = "auto";
+    });
+  } else {
+    document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">${res}</span>`;
+  }
+})
+.catch(function(error) {
+  btnText.innerText = "MULAI VERIFIKASI";
+  btnText.classList.remove("loading-dots");
+  console.error('Error:', error);
+  document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">❌ TERJADI KESALAHAN</span>`;
 });
-
-    } else {
-      document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">${res}</span>`;
-
-    }
-  }).cekDanPakaiToken(namaUser, kodeToken);
 }
 
 function bukaSemuaBox() {
@@ -675,24 +746,34 @@ function pilihBox(el) {
     el.classList.remove("flip-loop");
     el.classList.add("clicked");
 
-    google.script.run.withSuccessHandler(function(data) {
+    // 🔧 Pakai callGoogleScript
+    callGoogleScript('getSisaHadiah')
+    .then(function(data) {
       hadiahLain = data;
 
       setTimeout(() => {
         el.classList.remove("clicked");
 
-        google.script.run.withSuccessHandler(function(tipe) {
-          let hadiah = 10;
-          if (tipe === "kuponA") hadiah = [3000,4000,5000][Math.floor(Math.random()*3)];
-          else if (tipe === "kuponB") hadiah = [7000,8000,9000,10000][Math.floor(Math.random()*4)];
+        callGoogleScript('getTipeKupon', { nama: namaUser })
+        .then(function(tipe) {
+          let hadiah;
+          if (tipe === "kuponA") {
+            hadiah = [3000,4000,5000][Math.floor(Math.random()*3)];
+          } else if (tipe === "kuponB") {
+            hadiah = [7000,8000,9000,10000][Math.floor(Math.random()*4)];
+          } else {
+            // Default hadiah random dari hadiahList (2000-10000)
+            hadiah = hadiahList[Math.floor(Math.random() * hadiahList.length)];
+          }
 
-          hadiahUtama = `Rp${hadiah.toLocaleString()}`;
-          const statusPopup = `MENANG ${hadiahUtama}`;
+          hadiahUtama = `Rp${hadiah.toLocaleString('id-ID')}`;
+          const statusPopup = `SELAMAT! ANDA MENANG ${hadiahUtama}`;
 
           // buka semua box (drum MASIH bunyi)
           bukaSemuaBox();
 
-          google.script.run.simpanHasil({ nama: namaUser, kode: kodeToken, status: hadiahUtama });
+          // 🔧 Pakai callGoogleScript untuk simpan hasil
+          callGoogleScript('simpanHasil', { nama: namaUser, kode: kodeToken, status: hadiahUtama });
 
           // siapkan isi popup
           document.getElementById("popupContent").innerHTML = `
@@ -711,9 +792,16 @@ function pilihBox(el) {
             if (w) playWithRetry(w, 1);
           }, 1200); // kalau mau lebih cepat, kecilkan angka ini
 
-        }).getTipeKupon(namaUser);
+        })
+        .catch(function(error) {
+          console.error('Error getTipeKupon:', error);
+        });
       }, 100);
-    }).getSisaHadiah();
+    })
+    .catch(function(error) {
+      console.error('Error getSisaHadiah:', error);
+      sudahSpin = false; // Reset jika error
+    });
 
   }, 1200);
 }
@@ -745,7 +833,9 @@ function tampilkanHistoryGabungan() {
     return;
   }
 
-  google.script.run.withSuccessHandler(function(data) {
+  // 🔧 Pakai callGoogleScript
+  callGoogleScript('getHistori', { nama: user })
+  .then(function(data) {
     clearInterval(intervalHistori);
     textHistori.innerText = "CEK HISTORI";
 
@@ -776,7 +866,14 @@ function tampilkanHistoryGabungan() {
     html += '</ul>';
     historyEl.innerHTML = html;
     historyEl.style.display = "block";
-  }).ambilHistoriGabungan(user);
+  })
+  .catch(function(error) {
+    clearInterval(intervalHistori);
+    textHistori.innerText = "CEK HISTORI";
+    console.error('Error:', error);
+    historyEl.style.display = "block";
+    historyEl.innerHTML = "<p style='color:red;'>❌ Terjadi kesalahan saat mengambil histori.</p>";
+  });
 }
 
 function kembaliKeForm() {
