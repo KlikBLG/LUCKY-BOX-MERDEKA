@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = (...a) => import('node-fetch').then(({default:f}) => f(...a));
 
-const APP = 'https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec';
 
 const app = express();
 app.use(cors());
