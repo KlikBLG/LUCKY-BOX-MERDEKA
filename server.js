@@ -43,5 +43,3 @@ app.all('/api', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Proxy API: http://localhost:${PORT}`));
-
-app.listen(3000, () => console.log('Proxy API jalan di http://localhost:3000'));
