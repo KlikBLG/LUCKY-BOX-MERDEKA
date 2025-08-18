@@ -6,6 +6,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 app.use(bodyParser.json());
@@ -57,6 +58,18 @@ async function setSheetValue(row, col, value) {
 // === API Endpoints ===
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Endpoint untuk ambil kode hari ini dari Apps Script Web App
+app.get('/ambilKodeHariIni', async (req, res) => {
+  try {
+    const response = await axios.get('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec', {
+      params: { action: 'ambilKodeHariIni' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.toString() });
+  }
 });
 
 app.get('/api', async (req, res) => {
