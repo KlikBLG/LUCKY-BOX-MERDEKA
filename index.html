@@ -551,53 +551,54 @@ let sudahSpin = false; // ✅ Tambahkan ini
 
 
 function spinStart() {
-    sudahSpin = false; // 🔥 RESET FLAG SPIN di awal spin ulang
-    
-document.querySelectorAll('.box').forEach(box => {
-    box.classList.add('besar'); // ⬅️ Tambahin ini biar tetap besar
-  // biarkan animasi selesai dulu baru reset class
-  setTimeout(() => {
-    box.classList.remove('clicked', 'terbuka');
-    box.innerHTML = "🎁";
-    box.style.pointerEvents = "auto";
-    box.style.animation = "";
-    box.style.transform = "";
-   
-  }, 1000);
-});
+  sudahSpin = false; // 🔥 RESET FLAG SPIN di awal spin ulang
+  document.querySelectorAll('.box').forEach(box => {
+    box.classList.add('besar');
+    setTimeout(() => {
+      box.classList.remove('clicked', 'terbuka');
+      box.innerHTML = "🎁";
+      box.style.pointerEvents = "auto";
+      box.style.animation = "";
+      box.style.transform = "";
+    }, 1000);
+  });
   namaUser = document.getElementById("nama").value.trim();
   kodeToken = document.getElementById("kode").value.trim();
 
   const btnText = document.getElementById("btnText");
   btnText.innerText = "MEMPROSES";
   btnText.classList.add("loading-dots");
+  document.getElementById("hasil").innerHTML = "";
 
- document.getElementById("hasil").innerHTML = "";
-
-
-if (!namaUser || !kodeToken) {
+  if (!namaUser || !kodeToken) {
     alert("Isi nama dan kode token dulu!");
     return;
   }
-google.script.run.withSuccessHandler(function(res) {
-  btnText.innerText = "MULAI VERIFIKASI";
-btnText.classList.remove("loading-dots");
-    if (res === "OK") {
-document.getElementById("formPage").style.display = "none";
-document.getElementById("boxPage").style.display = "block"; // ganti jadi block
-document.getElementById("boxArea").style.display = "grid";  // tampilkan kembali area box
-document.getElementById("historyBox").style.display = "none"; // sembunyikan histori kalau sebelumnya muncul
-     document.querySelectorAll(".box").forEach(box => {
-        box.classList.remove("terbuka", "blink", "clicked"); // ⬅️ pastikan ada "clicked" juga di sini
-  box.innerHTML = "🎁";
-  box.style.pointerEvents = "auto";
-});
-
-    } else {
-      document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">${res}</span>`;
-
-    }
-  }).cekDanPakaiToken(namaUser, kodeToken);
+  // Ganti google.script.run dengan fetch ke Apps Script Web App
+  fetch('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec?action=cekToken&nama=' + encodeURIComponent(namaUser) + '&kode=' + encodeURIComponent(kodeToken))
+    .then(res => res.json())
+    .then(function(res) {
+      btnText.innerText = "MULAI VERIFIKASI";
+      btnText.classList.remove("loading-dots");
+      if (res === "OK") {
+        document.getElementById("formPage").style.display = "none";
+        document.getElementById("boxPage").style.display = "block";
+        document.getElementById("boxArea").style.display = "grid";
+        document.getElementById("historyBox").style.display = "none";
+        document.querySelectorAll(".box").forEach(box => {
+          box.classList.remove("terbuka", "blink", "clicked");
+          box.innerHTML = "🎁";
+          box.style.pointerEvents = "auto";
+        });
+      } else {
+        document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">${res}</span>`;
+      }
+    })
+    .catch(function(err) {
+      btnText.innerText = "MULAI VERIFIKASI";
+      btnText.classList.remove("loading-dots");
+      document.getElementById("hasil").innerHTML = `<span style="font-weight: 800; color: red;">Terjadi kesalahan: ${err}</span>`;
+    });
 }
 
 function bukaSemuaBox() {
