@@ -676,45 +676,53 @@ function pilihBox(el) {
     el.classList.remove("flip-loop");
     el.classList.add("clicked");
 
-    google.script.run.withSuccessHandler(function(data) {
-      hadiahLain = data;
+    // Ambil data hadiah dari Apps Script Web App
+    fetch('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec?action=getSisaHadiah')
+      .then(res => res.json())
+      .then(function(data) {
+        hadiahLain = data;
+        setTimeout(() => {
+          el.classList.remove("clicked");
+          // Ambil tipe kupon dari Apps Script Web App
+          fetch('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec?action=getTipeKupon&nama=' + encodeURIComponent(namaUser))
+            .then(res => res.json())
+            .then(function(tipe) {
+              let hadiah = 10;
+              if (tipe === "kuponA") hadiah = [3000,4000,5000][Math.floor(Math.random()*3)];
+              else if (tipe === "kuponB") hadiah = [6000,7000,8000][Math.floor(Math.random()*4)];
 
-      setTimeout(() => {
-        el.classList.remove("clicked");
+              hadiahUtama = `Rp${hadiah.toLocaleString()}`;
+              const statusPopup = `MENANG ${hadiahUtama}`;
 
-        google.script.run.withSuccessHandler(function(tipe) {
-          let hadiah = 10;
-          if (tipe === "kuponA") hadiah = [3000,4000,5000][Math.floor(Math.random()*3)];
-          else if (tipe === "kuponB") hadiah = [6000,7000,8000][Math.floor(Math.random()*4)];
+              // buka semua box (drum MASIH bunyi)
+              bukaSemuaBox();
 
-          hadiahUtama = `Rp${hadiah.toLocaleString()}`;
-          const statusPopup = `MENANG ${hadiahUtama}`;
+              // Simpan hasil ke Apps Script Web App
+              fetch('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'simpanHasil', nama: namaUser, kode: kodeToken, status: hadiahUtama })
+              });
 
-          // buka semua box (drum MASIH bunyi)
-          bukaSemuaBox();
+              // siapkan isi popup
+              document.getElementById("popupContent").innerHTML = `
+                <img src="https://dpw3m2v9dxyrl.cloudfront.net/498/assets/banner/IND/Logo%20Slot%20Bang%20Jago%20200x90.png?V=1748482602" style="height: 70px; margin-bottom: 10px;"><br>
+                🎉<br><strong>${statusPopup}</strong>
+                <div style="margin-top: 10px; font-size: 14px; color: #555;">
+                  SCREENSHOT DAN KLAIM HADIAH MELALUI <b>TELEGRAM</b>.
+                </div>
+              `;
 
-          google.script.run.simpanHasil({ nama: namaUser, kode: kodeToken, status: hadiahUtama });
-
-          // siapkan isi popup
-          document.getElementById("popupContent").innerHTML = `
-            <img src="https://dpw3m2v9dxyrl.cloudfront.net/498/assets/banner/IND/Logo%20Slot%20Bang%20Jago%20200x90.png?V=1748482602" style="height: 70px; margin-bottom: 10px;"><br>
-            🎉<br><strong>${statusPopup}</strong>
-            <div style="margin-top: 10px; font-size: 14px; color: #555;">
-              SCREENSHOT DAN KLAIM HADIAH MELALUI <b>TELEGRAM</b>.
-            </div>
-          `;
-
-          // ⏱️ saat POPUP DITAMPILKAN → baru stop drum + play win
-          setTimeout(() => {
-            document.getElementById("popupHadiah").style.display = "flex";
-            stopLoop('sfxDrumBand', 500);        // fade-out 0.4s
-            const w = byId('sfxWin');
-            if (w) playWithRetry(w, 1);
-          }, 1200); // kalau mau lebih cepat, kecilkan angka ini
-
-        }).getTipeKupon(namaUser);
-      }, 100);
-    }).getSisaHadiah();
+              // ⏱️ saat POPUP DITAMPILKAN → baru stop drum + play win
+              setTimeout(() => {
+                document.getElementById("popupHadiah").style.display = "flex";
+                stopLoop('sfxDrumBand', 500);
+                const w = byId('sfxWin');
+                if (w) playWithRetry(w, 1);
+              }, 1200);
+            });
+        }, 100);
+      });
 
   }, 1200);
 }
@@ -746,38 +754,36 @@ function tampilkanHistoryGabungan() {
     return;
   }
 
-  google.script.run.withSuccessHandler(function(data) {
-    clearInterval(intervalHistori);
-    textHistori.innerText = "CEK HISTORI";
-
-    // ... (sisa isi tetap)
-
-    let html = `
-      <div style="margin-bottom: 10px; padding: 8px; background: linear-gradient(to right, #ffcc00, #ff9900); color: #000; font-weight: bold; border-radius: 6px;">
-        🥇Kemenangan Mulai dari Rp3.000 - Rp10.000.000 💰
-      </div>
-      <h3>🎉 Pemenang Hari Ini</h3>
-      <ul style="text-align:left;">
-    `;
-
-    data.member.forEach(row => {
-      html += `<li>🏆 <strong>${row.nama}</strong> Memenangkan <span style="color:gold;">${row.status}</span></li>`;
+  // Ambil histori gabungan dari Apps Script Web App
+  fetch('https://script.google.com/macros/s/AKfycbxprHOkKMykjNYBqHcyCqmTdMg1_kZjOPKB7vX-cQt2gF7FUgnRi8ytX2Ap9hIkuK8Mfg/exec?action=getHistori&nama=' + encodeURIComponent(user))
+    .then(res => res.json())
+    .then(function(data) {
+      clearInterval(intervalHistori);
+      textHistori.innerText = "CEK HISTORI";
+      let html = `
+        <div style="margin-bottom: 10px; padding: 8px; background: linear-gradient(to right, #ffcc00, #ff9900); color: #000; font-weight: bold; border-radius: 6px;">
+          🥇Kemenangan Mulai dari Rp3.000 - Rp10.000.000 💰
+        </div>
+        <h3>🎉 Pemenang Hari Ini</h3>
+        <ul style="text-align:left;">
+      `;
+      data.member.forEach(row => {
+        html += `<li>🏆 <strong>${row.nama}</strong> Memenangkan <span style="color:gold;">${row.status}</span></li>`;
+      });
+      data.fake.forEach(text => {
+        const match = text.match(/(.+?) Memenangkan (Rp .+)/);
+        if (match) {
+          const nama = match[1];
+          const nominal = match[2];
+          html += `<li>🏆 <strong>${nama}</strong> Memenangkan <span style="color:gold;">${nominal}</span></li>`;
+        } else {
+          html += `<li>🏆 ${text}</li>`;
+        }
+      });
+      html += '</ul>';
+      historyEl.innerHTML = html;
+      historyEl.style.display = "block";
     });
-    data.fake.forEach(text => {
-      const match = text.match(/(.+?) Memenangkan (Rp .+)/);
-      if (match) {
-        const nama = match[1];
-        const nominal = match[2];
-        html += `<li>🏆 <strong>${nama}</strong> Memenangkan <span style="color:gold;">${nominal}</span></li>`;
-      } else {
-        html += `<li>🏆 ${text}</li>`;
-      }
-    });
-
-    html += '</ul>';
-    historyEl.innerHTML = html;
-    historyEl.style.display = "block";
-  }).ambilHistoriGabungan(user);
 }
 
 function kembaliKeForm() {
