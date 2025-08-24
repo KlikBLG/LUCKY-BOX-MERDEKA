@@ -1,6 +1,7 @@
 // server.js — proxy ke Google Apps Script Web App
 const express = require("express");
 const cors = require("cors");
+const fetch = (...args) => import("node-fetch").then(({default: f}) => f(...args)); // ⬅️ tambahkan ini
 
 const app = express();
 
