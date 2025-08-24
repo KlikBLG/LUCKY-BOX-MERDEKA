@@ -1,44 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spin Hadiah</title>
+  <style>
+    body { background: #8d0a0a; color: #fff; text-align:center; font-family:sans-serif; }
+    .box { width:120px; height:120px; font-size:64px; cursor:pointer; }
+    .box.terbuka { background:gold; color:black; font-weight:bold; }
+    #hasil { margin-top:20px; }
+    #popupHadiah { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); 
+      justify-content:center; align-items:center; z-index:999; }
+    #popupCard { background:white; color:black; padding:20px; border-radius:12px; max-width:300px; }
+  </style>
+</head>
+<body>
+  <h1>🎁 RANDOM BOX PRIZE 🎁</h1>
+
+  <div id="formPage">
+    <input type="text" id="nama" placeholder="USERNAME"><br>
+    <input type="text" id="kode" placeholder="KODE TOKEN"><br>
+    <button onclick="spinStart()">🔒 MULAI VERIFIKASI</button>
+    <div id="hasil"></div>
+  </div>
+
+  <div id="boxPage" style="display:none;">
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div><br>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div><br>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <div class="box" onclick="pilihBox(this)">🎁</div>
+    <br><br>
+    <button onclick="tampilkanHistory()">📜 CEK HISTORI</button>
+    <button onclick="kembaliKeForm()">🔙 KEMBALI</button>
+    <div id="historyBox"></div>
+  </div>
+
+  <div id="popupHadiah">
+    <div id="popupCard">
+      <div id="popupContent"></div>
+      <button onclick="tutupPopup()">OK</button>
+    </div>
+  </div>
+
 <script>
-const API = "https://spin-api-production.up.railway.app"; // ganti URL API kamu
+const API = "https://spin-api-production.up.railway.app"; // URL backend kamu
 
-function spinStart() {
-  const namaUser = document.getElementById("nama").value.trim();
-  const kodeToken = document.getElementById("kode").value.trim();
+let namaUser="", kodeToken="", hadiahUtama="", sudahSpin=false;
 
-  fetch(`${API}/cekDanPakaiToken`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nama: namaUser, kode: kodeToken })
+// === START SPIN (cek token)
+function spinStart(){
+  namaUser=document.getElementById("nama").value.trim();
+  kodeToken=document.getElementById("kode").value.trim();
+
+  fetch(`${API}/cekDanPakaiToken`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nama:namaUser,kode:kodeToken})
   })
-  .then(r => r.json())
-  .then(res => {
-    if (res.status === "OK") {
-      document.getElementById("formPage").style.display = "none";
-      document.getElementById("boxPage").style.display = "block";
-      document.querySelectorAll(".box").forEach(b => {
-        b.innerHTML = "🎁"; b.style.pointerEvents = "auto";
-      });
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.status==="OK"){
+      document.getElementById("formPage").style.display="none";
+      document.getElementById("boxPage").style.display="block";
     } else {
-      document.getElementById("hasil").innerHTML = `<b>${res.msg}</b>`;
+      document.getElementById("hasil").innerHTML=res.msg;
     }
   });
 }
 
-function simpanHasil(namaUser, kodeToken, hadiahUtama) {
-  fetch(`${API}/simpanHasil`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nama: namaUser, kode: kodeToken, status: hadiahUtama })
+// === PILIH BOX
+function pilihBox(el){
+  if(sudahSpin) return;
+  sudahSpin=true;
+  el.classList.add("terbuka");
+  hadiahUtama="Rp"+(Math.floor(Math.random()*3+3)*1000).toLocaleString("id-ID");
+  el.innerHTML=hadiahUtama;
+
+  // simpan hasil ke sheet
+  fetch(`${API}/simpanHasil`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nama:namaUser,kode:kodeToken,status:hadiahUtama})
+  });
+
+  // popup hadiah
+  document.getElementById("popupContent").innerHTML="🎉 Kamu menang "+hadiahUtama;
+  document.getElementById("popupHadiah").style.display="flex";
+}
+
+// === TUTUP POPUP
+function tutupPopup(){
+  document.getElementById("popupHadiah").style.display="none";
+}
+
+// === CEK HISTORI
+function tampilkanHistory(){
+  fetch(`${API}/ambilHistoriGabungan/${encodeURIComponent(namaUser)}`)
+  .then(r=>r.json())
+  .then(data=>{
+    let html="<h3>Histori Kamu</h3><ul>";
+    data.member.forEach(m=>{ html+=`<li>${m.nama} → ${m.status}</li>`; });
+    html+="</ul><h3>Fake Winners</h3><ul>";
+    data.fake.forEach(f=>{ html+=`<li>${f}</li>`; });
+    html+="</ul>";
+    document.getElementById("historyBox").innerHTML=html;
   });
 }
 
-function getSisaHadiah() {
-  return fetch(`${API}/getSisaHadiah`)
-    .then(r => r.json());
-}
-
-function ambilHistori(user) {
-  return fetch(`${API}/ambilHistoriGabungan/${encodeURIComponent(user)}`)
-    .then(r => r.json());
+// === KEMBALI
+function kembaliKeForm(){
+  document.getElementById("formPage").style.display="block";
+  document.getElementById("boxPage").style.display="none";
+  sudahSpin=false;
+  document.querySelectorAll(".box").forEach(b=>{
+    b.innerHTML="🎁";
+    b.classList.remove("terbuka");
+  });
 }
 </script>
+</body>
+</html>
