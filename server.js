@@ -1,15 +1,35 @@
 // server.js
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const { google } = require("googleapis");
 require("dotenv").config();
 
 const app = express();
-app.use(cors()); // kalau mau aman ganti ke origin GitHub Pages kamu
-app.use(bodyParser.json());
 
-// --- Google Sheets Auth (pakai Service Account)
+// --- Config
+const ALLOWED = (process.env.ALLOWED_ORIGIN || "*")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// --- Middlewares
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || ALLOWED.includes("*") || ALLOWED.includes(origin)) return cb(null, true);
+    return cb(new Error(`Origin ${origin} not allowed by CORS`));
+  }
+}));
+app.use(express.json()); // ganti body-parser
+
+// Tangkap error JSON (biar ga 500 kalau body invalid)
+app.use((err, _req, res, next) => {
+  if (err instanceof SyntaxError && "body" in err) {
+    return res.status(400).json({ status: "ERROR", msg: "Invalid JSON" });
+  }
+  next(err);
+});
+
+// --- Google Sheets Auth (Service Account)
 const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   null,
@@ -19,7 +39,7 @@ const auth = new google.auth.JWT(
 const sheets = google.sheets({ version: "v4", auth });
 const SHEET_ID = process.env.SHEET_ID;
 
-// Helper
+// --- Helpers
 async function getValues(range) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID, range
@@ -43,38 +63,48 @@ async function appendRow(range, values) {
   });
 }
 
-// === API cek token ===
+// --- Healthcheck (biar gampang cek URL Railway)
+app.get("/", (_req, res) => res.send("Spin API OK"));
+
+// === API: cek token ===
 app.post("/cekDanPakaiToken", async (req, res) => {
   try {
-    const { nama, kode } = req.body;
+    const { nama, kode } = req.body || {};
     if (!nama || !kode) return res.json({ status: "ERROR", msg: "❌ Isi nama & kode!" });
 
-    const rows = await getValues("spindata!O2:P");
+    const rows = await getValues("spindata!O2:P"); // O=kode, P=status
     let foundRowIndex = -1;
+
     for (let i = 0; i < rows.length; i++) {
-      const [kodeKupon, status] = rows[i];
+      const [kodeKupon, status] = rows[i] || [];
       if (kodeKupon === kode) {
-        foundRowIndex = i + 2;
+        foundRowIndex = i + 2; // baris sheet (mulai dari 2)
         if (status === "SUDAH") {
           return res.json({ status: "ERROR", msg: "❌ KODE SUDAH DIPAKAI" });
         }
         break;
       }
     }
-    if (foundRowIndex === -1) return res.json({ status: "ERROR", msg: "❌ KODE TIDAK VALID!" });
+
+    if (foundRowIndex === -1) {
+      return res.json({ status: "ERROR", msg: "❌ KODE TIDAK VALID!" });
+    }
 
     await updateCell(`spindata!P${foundRowIndex}`, "SUDAH");
     res.json({ status: "OK" });
   } catch (e) {
-    console.error(e);
+    console.error("cekDanPakaiToken error:", e);
     res.status(500).json({ status: "ERROR", msg: "Server error" });
   }
 });
 
-// === API simpan hasil spin ===
+// === API: simpan hasil spin ===
 app.post("/simpanHasil", async (req, res) => {
   try {
-    const { nama, kode, status } = req.body;
+    const { nama, kode, status } = req.body || {};
+    if (!nama || !kode || !status) {
+      return res.json({ status: "ERROR", msg: "Data kurang" });
+    }
     await appendRow("spindata!A:D", [
       new Date().toISOString(),
       String(nama).toLowerCase(),
@@ -83,12 +113,12 @@ app.post("/simpanHasil", async (req, res) => {
     ]);
     res.json({ status: "OK" });
   } catch (e) {
-    console.error(e);
+    console.error("simpanHasil error:", e);
     res.status(500).json({ status: "ERROR", msg: "Server error" });
   }
 });
 
-// === API ambil histori ===
+// === API: histori gabungan ===
 app.get("/ambilHistoriGabungan/:nama", async (req, res) => {
   try {
     const nama = (req.params.nama || "").toLowerCase();
@@ -100,8 +130,8 @@ app.get("/ambilHistoriGabungan/:nama", async (req, res) => {
 
     const fake = rows
       .map(row => {
-        const namaFake = row[18];
-        const hadiahRaw = row[19];
+        const namaFake = row[18]; // S
+        const hadiahRaw = row[19]; // T
         const hadiah = parseInt(String(hadiahRaw || "").replace(/[^\d]/g, ""));
         if (!namaFake || isNaN(hadiah)) return null;
         return `${namaFake} Memenangkan Rp ${hadiah.toLocaleString("id-ID")}`;
@@ -111,22 +141,31 @@ app.get("/ambilHistoriGabungan/:nama", async (req, res) => {
 
     res.json({ member, fake });
   } catch (e) {
-    console.error(e);
+    console.error("ambilHistoriGabungan error:", e);
     res.status(500).json({ status: "ERROR", msg: "Server error" });
   }
 });
 
-// === API get sisa hadiah ===
+// === API: list hadiah lainnya (9 item) ===
 app.get("/getSisaHadiah", async (_req, res) => {
   try {
     const data = await getValues("spindata!AE2:AE10");
     res.json((data.flat() || []).map(v => Number(v) || 0));
   } catch (e) {
-    console.error(e);
+    console.error("getSisaHadiah error:", e);
     res.status(500).json({ status: "ERROR", msg: "Server error" });
   }
 });
 
-app.listen(process.env.PORT || 3000, () =>
-  console.log(`API ready on port ${process.env.PORT || 3000}`)
-);
+// --- Warm-up auth (optional, biar ketahuan kalo cred salah)
+(async () => {
+  try {
+    await auth.authorize();
+    console.log("✅ Google auth OK");
+  } catch (e) {
+    console.error("❌ Google auth FAILED:", e.message);
+  }
+})();
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`API ready on port ${PORT}`));
