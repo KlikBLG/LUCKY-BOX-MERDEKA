@@ -34,7 +34,7 @@ const auth = new google.auth.JWT(
   process.env.GOOGLE_CLIENT_EMAIL,
   null,
   (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
-  ["https://www.googleapis.com/auth/spreadsheets"]
+  ["https://script.google.com/macros/s/AKfycbx9-kv79wzrV4ZFWpODh1YXqnkpkiUt0qoNI61WbUSN-wxYFRjlEl-imsGp2v9krHhKsg/exec"]
 );
 const sheets = google.sheets({ version: "v4", auth });
 const SHEET_ID = process.env.SHEET_ID;
