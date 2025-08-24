@@ -3,124 +3,570 @@
 <head>
   <meta charset="UTF-8">
   <title>Spin Hadiah</title>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2/tsparticles.bundle.min.js"></script>
   <style>
-    body { background: #8d0a0a; color: #fff; text-align:center; font-family:sans-serif; }
-    .box { width:120px; height:120px; font-size:64px; cursor:pointer; }
-    .box.terbuka { background:gold; color:black; font-weight:bold; }
-    #hasil { margin-top:20px; }
-    #popupHadiah { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); 
-      justify-content:center; align-items:center; z-index:999; }
-    #popupCard { background:white; color:black; padding:20px; border-radius:12px; max-width:300px; }
+
+.loading-dots::after {
+  content: '';
+  display: inline-block;
+  animation: dotsAnim 1s steps(3, end) infinite;
+}
+
+@keyframes dotsAnim {
+  0%   { content: ''; }
+  33%  { content: '.'; }
+  66%  { content: '..'; }
+  100% { content: '...'; }
+}
+
+.judul-keren {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: white;
+  text-align: center;
+  text-shadow:
+    2px 2px 0 #000,
+    4px 4px 0 #000,
+    6px 6px 10px rgba(0, 0, 0, 0.8);
+  letter-spacing: 2px;
+  margin-top: 60px;
+}
+
+.blink {
+  animation: blink-animation 1s infinite;
+}
+
+@keyframes blink-animation {
+  0%, 100% { background-color: #ffcc00; }
+  50% { background-color: #ff0000; color: white; }
+}
+.box.terbuka {
+  background: gold;
+  color: black;
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  transform: scale(1.05);
+  transition: 0.5s ease;
+  text-shadow: 1px 1px 0 #fff,
+               2px 2px 0 #aaa,
+               3px 3px 0 #777;
+}
+#boxArea {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.box-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  justify-content: center;
+  align-content: center;
+}
+@media screen and (max-width: 600px) {
+  .input-wrapper {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+.input-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+a:hover img {
+  filter: brightness(1.2);
+  transform: scale(1.05);
+  transition: 0.3s;
+}
+
+.banner-berjalan {
+  width: 100%;
+  background: #ffcc00;
+  color: black;
+  padding: 8px 0;
+  font-weight: bold;
+  font-size: 16px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+  /* 🟢 Tambahkan di bawah ini */
+  input, button {
+    padding: 10px 15px;
+    font-size: 16px;
+    margin: 5px;
+    border-radius: 5px;
+  }
+
+.klaim-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #ffcc00;
+  color: black;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.klaim-button:hover {
+  background: #ffaa00;
+}
+
+/* Efek hover untuk tombol */
+button:hover {
+  background-color: #ffaa00;
+  transform: scale(1.05);
+  transition: 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 0 10px #ffcc00;
+}
+
+
+#historyBox  {
+  display: none;
+  margin: 40px auto;
+  padding: 20px;
+  max-width: 500px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  text-align: left;
+  font-size: 16px;
+}
+#historyBox ul {
+  list-style: none;
+  padding-left: 0;
+}
+#historyBox li {
+  animation: fadeInUp 0.3s ease-in-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #8d0a0a !important;
+  font-family: 'Segoe UI', sans-serif;
+  color: #fff;
+  text-align: center;
+  height: auto;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto; /* ✅ INI YANG NGIDUPIN SCROLL VERTICAL */
+}
+#tsparticles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* ✅ ini sudah BENAR */
+}
+
+body {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 50px; /* buat jaga2 kalau ada konten bawah */
+}
+
+    .box {
+      width: 150px;
+      height: 150px;
+      background: transparent;
+      font-size: 90px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+
+    .box.clicked {
+      animation: diceShake 0.2s ease-in-out 10;
+    }
+.box:hover {
+  transform: scale(1.2) rotate(5deg);
+  box-shadow: 0 0 15px #ffffff80;
+  transition: 0.3s ease;
+}
+
+    @keyframes diceShake {
+      0%   { transform: translate(0, 0) rotate(0deg); }
+      10%  { transform: translate(-3px, -5px) rotate(15deg); }
+      20%  { transform: translate(5px, 3px) rotate(-15deg); }
+      30%  { transform: translate(-4px, 6px) rotate(10deg); }
+      40%  { transform: translate(6px, -4px) rotate(-10deg); }
+      50%  { transform: translate(-6px, 5px) rotate(20deg); }
+      60%  { transform: translate(5px, -3px) rotate(-20deg); }
+      70%  { transform: translate(-3px, 4px) rotate(10deg); }
+      80%  { transform: translate(4px, -6px) rotate(-10deg); }
+      90%  { transform: translate(-5px, 3px) rotate(5deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 300px;  /* ✅ ini yang bikin popup naik */
+  overflow-y: auto;
+  z-index: 9999;
+}
+.popup-card {
+  background: white;
+  color: black;
+  padding: 25px 30px;
+  border-radius: 14px;
+  font-size: 28px;
+  font-weight: bold;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  max-width: 320px; /* Tambahin ini biar tidak terlalu besar */
+  width: 100vw;       /* Responsif */
+  text-align: center;
+  margin-left: -25px; /* Tambahan ini geser popup ke kiri */
+}
   </style>
 </head>
 <body>
-  <h1>🎁 RANDOM BOX PRIZE 🎁</h1>
 
-  <div id="formPage">
-    <input type="text" id="nama" placeholder="USERNAME"><br>
-    <input type="text" id="kode" placeholder="KODE TOKEN"><br>
-    <button onclick="spinStart()">🔒 MULAI VERIFIKASI</button>
-    <div id="hasil"></div>
+<audio id="sfxPutar" src="https://yourdomain.com/path-to/hyperdrive-sound-effect.wav" preload="auto"></audio>
+
+
+  
+  <div id="tsparticles"></div>
+
+  <div class="banner-berjalan">
+  <marquee behavior="scroll" direction="left">
+    SELAMAT DATANG DI RANDOM BOX SLOTBANGJAGO! HARI INI KAMU PUNYA KESEMPATAN UNTUK BUKA SATU DARI 9 BOX YANG ISINYA 100% BERHADIAH🎁
+  </marquee>
+</div>
+
+<h1 class="judul-keren"> RANDOM BOX PRIZE </h1>
+<div style="text-align: center; margin-top: 10px;">
+  <a href="https://18slotbangjago.com/" target="_blank">
+    <img src="https://dpw3m2v9dxyrl.cloudfront.net/498/assets/banner/IND/Logo%20Slot%20Bang%20Jago%20200x90.png?V=1748482602" alt="Slot Bangjago" style="height: 100px; cursor: pointer;">
+  </a>
+</div>
+<div id="formPage" class="input-wrapper" style="flex-direction: column; align-items: center;">
+  <input type="text" id="nama" placeholder="USERNAME" />
+  <input type="text" id="kode" placeholder="KODE TOKEN" />
+
+<div style="margin-top: 10px;">
+   <button id="btnVerifikasi" onclick="spinStart()">🔒 <span id="btnText">MULAI VERIFIKASI</span></button>
+
   </div>
+</div>
 
-  <div id="boxPage" style="display:none;">
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div><br>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div><br>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <div class="box" onclick="pilihBox(this)">🎁</div>
-    <br><br>
-    <button onclick="tampilkanHistory()">📜 CEK HISTORI</button>
+<div id="boxPage" style="display:none; animation: fadeIn 0.5s ease;">
+  <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+    <button onclick="tampilkanHistoryGabungan()">📜 <span id="textHistori">CEK HISTORI</span></button>
     <button onclick="kembaliKeForm()">🔙 KEMBALI</button>
-    <div id="historyBox"></div>
   </div>
+  <!-- ✅ INI POSISI BENAR -->
+<div id="historyBox" style="display:none; margin-top: 30px; color: white;"></div>
 
-  <div id="popupHadiah">
-    <div id="popupCard">
-      <div id="popupContent"></div>
-      <button onclick="tutupPopup()">OK</button>
+  <div class="wrapper">
+    <div class="box-container" id="boxArea">
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
+      <div class="box" onclick="pilihBox(this)">🎁</div>
     </div>
   </div>
+</div>
 
-<script>
-const API = "https://spin-api-production.up.railway.app"; // URL backend kamu
 
-let namaUser="", kodeToken="", hadiahUtama="", sudahSpin=false;
+  <div id="hasil"></div>
+<div id="popupHadiah" class="popup">
+  <div class="popup-card">
+    <div id="popupContent" style="margin-bottom: 15px;"></div>
+    <a href="https://t.me/+MYu2cG2rBPwzNGQ9" target="_blank" class="klaim-button">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" style="height: 20px; vertical-align: middle; margin-right: 8px;">
+  KLAIM BONUS DISINI
+</a>
+ <div style="margin-top: 20px;">
+  </div>
+</div>
 
-// === START SPIN (cek token)
-function spinStart(){
-  namaUser=document.getElementById("nama").value.trim();
-  kodeToken=document.getElementById("kode").value.trim();
 
-  fetch(`${API}/cekDanPakaiToken`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nama:namaUser,kode:kodeToken})
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.status==="OK"){
-      document.getElementById("formPage").style.display="none";
-      document.getElementById("boxPage").style.display="block";
-    } else {
-      document.getElementById("hasil").innerHTML=res.msg;
+
+<audio id="sfxWin" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-notification-2018.mp3"></audio>
+
+
+  <script>
+ document.getElementById("popupHadiah").addEventListener("click", function(e) {
+    if (!e.target.closest(".popup-card")) {
+      document.getElementById("popupHadiah").style.display = "none";
     }
   });
+
+
+    window.onload = () => {
+      tsParticles.load("tsparticles", {
+        background: { color: { value: "#8d0a0a" } },
+        particles: {
+          number: { value: 100, density: { enable: true, area: 800 } },
+          color: { value: "#ffffff" },
+          shape: { type: "circle" },
+          opacity: { value: 0.4 },
+          size: { value: 3, random: true },
+          links: {
+            enable: true,
+            distance: 130,
+            color: "#ffffff",
+            opacity: 0.4,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 1.2,
+            direction: "none",
+            outModes: { default: "bounce" }
+          }
+        },
+        interactivity: {
+          events: {
+            onhover: { enable: false },
+            onclick: { enable: false },
+            resize: true
+          }
+        },
+        detectRetina: true
+      });
+    };
+
+    let namaUser = "";
+    let kodeToken = "";
+    const hadiahList = [3000, 3000, 4000, 5000, 4000, 5000, 3000, 4000, 3000];
+
+let hadiahUtama = "";
+let indexDipilih = -1;
+let hadiahLain = [];
+let sudahSpin = false;
+
+function spinStart() {
+
+  namaUser = document.getElementById("nama").value.trim();
+  kodeToken = document.getElementById("kode").value.trim();
+
+  const btnText = document.getElementById("btnText");
+  btnText.innerText = "MEMPROSES";
+  btnText.classList.add("loading-dots");
+
+ document.getElementById("hasil").innerHTML = "";
+
+
+if (!namaUser || !kodeToken) {
+    alert("Isi nama dan kode token dulu!");
+    return;
+  }
+google.script.run.withSuccessHandler(function(res) {
+  btnText.innerText = "MULAI VERIFIKASI";
+btnText.classList.remove("loading-dots");
+    if (res === "OK") {
+document.getElementById("formPage").style.display = "none";
+     document.getElementById("boxPage").style.display = "block";
+     document.querySelectorAll(".box").forEach(box => {
+  box.innerHTML = "🎁";
+  box.style.pointerEvents = "auto";
+});
+
+    } else {
+      document.getElementById("hasil").innerHTML = `<span style="font-weight: 800;">${res}</span>`;
+
+    }
+  }).cekDanPakaiToken(namaUser, kodeToken);
 }
 
-// === PILIH BOX
-function pilihBox(el){
-  if(sudahSpin) return;
-  sudahSpin=true;
-  el.classList.add("terbuka");
-  hadiahUtama="Rp"+(Math.floor(Math.random()*3+3)*1000).toLocaleString("id-ID");
-  el.innerHTML=hadiahUtama;
 
-  // simpan hasil ke sheet
-  fetch(`${API}/simpanHasil`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nama:namaUser,kode:kodeToken,status:hadiahUtama})
+
+function bukaSemuaBox() {
+  const boxes = document.querySelectorAll(".box");
+
+  boxes.forEach((box, i) => {
+    setTimeout(() => {
+      box.classList.add("terbuka");
+      box.style.pointerEvents = "none";
+if (i === indexDipilih) {
+  box.classList.add("blink", "terbuka");
+box.innerHTML = `
+  <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 100%; line-height: 1; padding-top: 45px;">
+    <div style="font-size: 20px; margin-bottom: 20px;">🎯</div>
+    <div style="font-size: 28px; font-weight: bold;">${hadiahUtama}</div>
+  </div>
+`;
+
+} else {
+  const angka = parseInt(hadiahLain[i]) || 0;
+  box.style.background = "#FFD700";
+  box.style.color = "black";
+  box.innerHTML = `Rp${angka.toLocaleString("id-ID")}`;
+}
+    }, i * 100);
+  });
+}
+function pilihBox(el) {
+  if (sudahSpin) return; // ✅ Cegah klik lebih dari 1x
+  sudahSpin = true;      // ✅ Set agar user tidak bisa klik lagi
+
+  const boxes = document.querySelectorAll(".box");
+  indexDipilih = [...boxes].indexOf(el);
+
+  document.getElementById("sfxPutar").play();
+  el.classList.add("clicked");
+
+  google.script.run.withSuccessHandler(function(data) {
+    hadiahLain = data;
+
+setTimeout(() => {
+  el.classList.remove("clicked");
+
+  const hadiah = hadiahList[Math.floor(Math.random() * hadiahList.length)];
+  hadiahUtama = `Rp${hadiah.toLocaleString()}`;
+  const statusPopup = `MENANG ${hadiahUtama}`;
+
+  google.script.run.withSuccessHandler(function () {
+    bukaSemuaBox();
+      setTimeout(() => {
+    document.getElementById("popupContent").innerHTML = `
+      <img src="https://dpw3m2v9dxyrl.cloudfront.net/498/assets/banner/IND/Logo%20Slot%20Bang%20Jago%20200x90.png?V=1748482602" style="height: 70px; margin-bottom: 10px;"><br>
+      🎉<br><strong>${statusPopup}</strong>
+      <div style="margin-top: 10px; font-size: 14px; color: #555;">
+        SCREENSHOT DAN KLAIM HADIAH MELALUI <b>TELEGRAM</b>.
+      </div>
+    `;
+    document.getElementById("popupHadiah").style.display = "flex";
+    document.getElementById("sfxWin").play();
+      }, 2000); // ⏱️ Delay 3 detik
+  }).simpanHasil({
+    nama: namaUser,
+    kode: kodeToken,
+    status: hadiahUtama
   });
 
-  // popup hadiah
-  document.getElementById("popupContent").innerHTML="🎉 Kamu menang "+hadiahUtama;
-  document.getElementById("popupHadiah").style.display="flex";
+}, 300); // ✅ dari 1000 jadi 300 (atau 0 kalau mau instant)
+  }).getSisaHadiah();
 }
 
-// === TUTUP POPUP
-function tutupPopup(){
-  document.getElementById("popupHadiah").style.display="none";
-}
+function tampilkanHistoryGabungan() {
+  const user = document.getElementById("nama").value.trim();
+  const historyEl = document.getElementById("historyBox");
+  const textHistori = document.getElementById("textHistori");
 
-// === CEK HISTORI
-function tampilkanHistory(){
-  fetch(`${API}/ambilHistoriGabungan/${encodeURIComponent(namaUser)}`)
-  .then(r=>r.json())
-  .then(data=>{
-    let html="<h3>Histori Kamu</h3><ul>";
-    data.member.forEach(m=>{ html+=`<li>${m.nama} → ${m.status}</li>`; });
-    html+="</ul><h3>Fake Winners</h3><ul>";
-    data.fake.forEach(f=>{ html+=`<li>${f}</li>`; });
-    html+="</ul>";
-    document.getElementById("historyBox").innerHTML=html;
+  // Efek loading titik-titik
+  let dotCount = 0;
+  const intervalHistori = setInterval(() => {
+    dotCount = (dotCount + 1) % 4;
+    textHistori.innerText = "LOADING" + ".".repeat(dotCount);
+  }, 300);
+
+  document.getElementById("boxArea").style.display = "none";
+
+  if (!user) {
+    clearInterval(intervalHistori);
+    textHistori.innerText = "CEK HISTORI";
+
+    historyEl.style.display = "block";
+    historyEl.innerHTML = "<p style='color:yellow;'>❌ Masukkan nama dulu sebelum cek histori!</p>";
+    return;
+  }
+
+  google.script.run.withSuccessHandler(function(data) {
+    clearInterval(intervalHistori);
+    textHistori.innerText = "CEK HISTORI";
+
+    if (!data || (!data.member.length && !data.fake.length)) {
+      historyEl.style.display = "block";
+      historyEl.innerHTML = "<p style='color:orange;'>⚠️ Tidak ada histori ditemukan untuk nama ini.</p>";
+      return;
+    }
+
+    let html = `
+      <div style="margin-bottom: 10px; padding: 8px; background: linear-gradient(to right, #ffcc00, #ff9900); color: #000; font-weight: bold; border-radius: 6px;">
+        🥇Kemenangan Mulai dari Rp2.000 - Rp1.000.000 💰
+      </div>
+      <h3>🎉 Pemenang Hari Ini</h3>
+      <ul style="text-align:left;">
+    `;
+
+    data.member.forEach(row => {
+      html += `<li>🏆 <strong>${row.nama}</strong> Memenangkan <span style="color:gold;">${row.status}</span></li>`;
+    });
+    data.fake.forEach(text => {
+      const match = text.match(/(.+?) Memenangkan (Rp .+)/);
+      if (match) {
+        const nama = match[1];
+        const nominal = match[2];
+        html += `<li>🏆 <strong>${nama}</strong> Memenangkan <span style="color:gold;">${nominal}</span></li>`;
+      } else {
+        html += `<li>🏆 ${text}</li>`;
+      }
+    });
+
+    html += '</ul>';
+    historyEl.innerHTML = html;
+    historyEl.style.display = "block";
+  }).ambilHistoriGabungan(user);
+}
+function kembaliKeForm() {
+  document.getElementById("formPage").style.display = "block";
+  document.getElementById("boxPage").style.display = "none";
+  document.getElementById("historyBox").style.display = "none";
+  document.getElementById("boxArea").style.display = "grid";
+
+  // 🟢 Reset semua box ke kondisi awal
+  document.querySelectorAll(".box").forEach(box => {
+    box.innerHTML = "🎁";
+    box.classList.remove("terbuka", "clicked", "blink");
+    box.style.pointerEvents = "auto";
+    
+    
+    // 🧹 PENTING: Reset style manual yang sebelumnya ditimpa
+    box.style.background = "transparent";
+    box.style.color = "white";
+    box.style.boxShadow = "";
+    box.style.transform = "";
   });
-}
 
-// === KEMBALI
-function kembaliKeForm(){
-  document.getElementById("formPage").style.display="block";
-  document.getElementById("boxPage").style.display="none";
-  sudahSpin=false;
-  document.querySelectorAll(".box").forEach(b=>{
-    b.innerHTML="🎁";
-    b.classList.remove("terbuka");
-  });
+
+  // 🔒 Sembunyikan popup jika masih terbuka
+  document.getElementById("popupHadiah").style.display = "none";
+ sudahSpin = false;
 }
-</script>
+  </script>
 </body>
 </html>
